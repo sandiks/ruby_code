@@ -29,10 +29,15 @@ class Thing
     end 
   end
 
-  def method_missing(attr)
+  def method_missing(attr, *args, &block)
+    p "attr: #{attr} #{args} #{block_given?}"
+    if block_given?
+      yield
+    else
+     "no block"
+    end
     return instance_variable_get("@#{attr.to_s.sub('?','')}") if @last_method.nil? || attr.to_s.end_with?("?") 
     
-    p "attr: #{attr}"
     @obj_parts << attr
 
 
@@ -54,7 +59,7 @@ class Thing
 
     when :has
       if @obj_parts.size == 1
-        p "has,having: #{attr} number: #{@has_params_number}"
+        #p "has: #{attr} number: #{@has_params_number}"
         
         if @has_params_number > 1
           instance_variable_set("@#{attr}", Array.new(@has_params_number) { Thing.new("obj with #{attr}") })
@@ -63,6 +68,7 @@ class Thing
           instance_variable_set("@#{attr}", Thing.new("obj with one") )
         end
         @obj_parts = []
+        return instance_variable_get("@#{attr}")
         
       end 
 
@@ -76,7 +82,7 @@ class Thing
           instance_variable_set("@#{attr}", Thing.new("obj with one") )
         end
         @obj_parts = []
-        
+        return instance_variable_get("@#{attr}")
       end 
 
     end
@@ -99,5 +105,9 @@ jane = Thing.new('jane_1')
 #p jane.legs.first.is_a?(Thing)
 
 
-jane.has(2).arms.each { |thing| thing.having(1).hand.having(5).fingers }
-p jane.arms.first.hand.fingers.size
+#jane.has(2).arms.each { p "111" }
+#jane.has(2).arms.each { having(1).hand.having(5).fingers }
+
+#p jane.arms.first.hand
+
+jane.has(2).arms.each{ |th| th.having(1).hand.having(5).fingers; p th }
