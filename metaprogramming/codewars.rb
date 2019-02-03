@@ -1,27 +1,31 @@
 class Thing
-  
-  
-  attr_accessor :name, :last_method
+    
+  attr_accessor :name, :state
 
   def initialize(name)
     @name = name
-    @last_method = nil
+    @properties = {}
   end
   
-  [:is_a, :is_not_a, :is_the].each do |method_name|
+  [:is_a, :is_not_a].each do |method_name|
     define_method(method_name) do
-      @last_method = {type: method_name, exec: 0}
+      @state = { type: method_name, value: method_name == :is_a } 
       self
     end    
   end   
 
+  def is_the
+    @state = { type: :is_the } 
+    self
+  end
+
   def has(number)
-    @last_method = {type: :has, exec: 0, has_params_number: number}
+    @state = { type: :has, has_params_number: number } 
     self
   end
 
   def can(*args, &block)
-    @last_method = {type: :can, exec: 0}
+    @state = { type: :can } 
     self
   end
 
@@ -30,46 +34,54 @@ class Thing
   alias being_the is_the
   alias and_the is_the
 
-  def method_missing(attr, *args, &block)
-    if block_given?
-      yield
-    else
-     "no block"
+  def exec_last_command(attr, args)
+    if /\?$/.match(attr)
+        attr = attr.to_s.sub('?','').to_sym
     end
 
-    return instance_variable_get("@#{attr.to_s.sub('?','')}") if @last_method[:exec] == 1
+    if @properties.key?(attr)
+      value = @properties[attr]
+      
+      if value.is_a? Proc
+        instance_exec(args, &value)
+        value = nil
+      end      
 
-    case @last_method[:type]
+      @state = nil
+      value
+    end
+  end
+
+  def method_missing(attr, *args, &block)
+
+    res = exec_last_command(attr, args)
+    return res unless @state
+    
+    case @state[:type]
   
-    when :is_a
-      instance_variable_set("@#{attr}", true)       
-      @last_method[:exec] = 1
-
-    when :is_not_a
-      instance_variable_set("@#{attr}", false)
-      @last_method[:exec] = 1
+    when :is_a, :is_not_a
+      @properties[attr] = @state[:value]
 
     when :is_the
-      prop = @last_method[:property] 
+      prop = @properties[:attr_name] 
       if prop
-        instance_variable_set("@#{prop}", attr)
-        @last_method[:exec] = 1
+        @properties[prop] = attr.to_s 
+        @properties[:attr_name] = nil
       else 
-        @last_method[:property] = attr;
+        @properties[:attr_name] = attr
       end 
 
     when :has
-      has_number = @last_method[:has_params_number]
-        
+      has_number = @state[:has_params_number]
       value = if has_number > 1
          ThingArray.new(has_number) { Thing.new("#{attr}") }
       elsif has_number == 1
         Thing.new("#{attr}")
       end
-  
-      instance_variable_set("@#{attr}", value)
-      @last_method[:exec] = 1
-      return value
+      @properties[attr] = value
+    
+    when :can
+      @properties[attr] = block
     end
 
     self
@@ -87,11 +99,22 @@ end
 
 jane = Thing.new('jane_1')
 
+jane.is_not_a.person
+jane.is_a.person
+#jane.is_the.parent_of.joe
+#p jane.parent_of
+p jane.person?
+exit
 
 #jane.has(2).arms.each{ having(1).hand.having(5).fingers }
-#p jane.arms
+#p jane.arms.first.hand.fingers.size
 
-#jane.is_the.parent_of.joe
-jane.has(1).head.having(2).eyes.each { being_the.color.blue.with(1).pupil.being_the.color.black }
-p jane.head.eyes
+#jane.has(1).head.having(2).eyes.each { being_the.color.blue.with(1).pupil.being_the.color.black }
+#p jane.head.eyes[0]
 
+jane.can.speak('spoke') do |phrase|
+  p "#{@name} says: #{phrase}"
+end
+
+jane.speak("hello")
+#jane.last_method[:methods][:speak]
