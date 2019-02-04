@@ -31,7 +31,14 @@ module SomeModule
   def self.included(klass)
     puts "SomeModule was included in #{klass.inspect}"
   end
+  def name
+    p "ob name #{self}"
+  end
+
 end
 
-Class.new { include SomeModule }  # prints "SomeModule was included in #<Class:0x007fe17884f768>"
+User = Class.new { include SomeModule }  # prints "SomeModule was included in #<Class:0x007fe17884f768>"
+User.new.name
+
+#Class.new { extend SomeModule }      # nothing printed
 Object.new.extend SomeModule      # nothing printed
