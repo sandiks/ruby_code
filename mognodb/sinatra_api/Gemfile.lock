@@ -18,11 +18,9 @@ GEM
     mongoid (6.0.3)
       activemodel (~> 5.0)
       mongo (~> 2.3)
-    mongoid-geospatial (5.0.0)
-      mongoid (>= 5.0.0.beta)
     multi_json (1.12.1)
-    rack (1.6.5)
-    rack-protection (1.5.3)
+    rack (1.6.12)
+    rack-protection (1.5.5)
       rack
     rack-test (0.6.3)
       rack (>= 1.0)
@@ -46,8 +44,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  mongoid (>= 5.0.0)
-  mongoid-geospatial
+  mongoid
   sinatra
   sinatra-contrib
 
